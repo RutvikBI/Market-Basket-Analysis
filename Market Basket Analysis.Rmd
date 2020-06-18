@@ -1,0 +1,92 @@
+---
+title: "Market basket"
+output: html_document
+---
+
+```{r}
+#install.packages("arules")
+#install.packages("arulesviz")
+
+```
+
+```{r}
+#Step 1 - load the relevant libraries
+library(arules)
+library(arulesViz)
+library(dplyr)
+```
+
+```{r}
+
+chipotle<-read.transactions("//scb-sv-fs-1//users$//rg6300//Documents//chipotleorders.csv", format = "single", header = "True", sep=",", cols = c("order_id", "item_name") )
+```
+
+```{r}
+#cafe %>% glimpse()
+```
+
+```{r}
+image(chipotle[1:50,1:50])
+```
+
+
+```{r}
+# Step 3 – Create an item frequency plot for the top 20 items 
+ 
+itemFrequencyPlot(chipotle,topN=20,type="absolute")
+
+```
+
+```{r}
+# Step 4 - Get the rules setting min support to 0.001 and minimum confidence to 0.8
+
+rules <- apriori(chipotle, parameter = list(supp = 0.001, conf = 0.80)) 
+
+```
+
+```{r}
+# Step 5 - Limit the digits to 2 for reference and sort the rules by confidence before 
+# inspecting the top 5 rules found
+rules<-sort(rules, by="confidence", decreasing=TRUE) 
+options(digits=2)
+inspect(rules[1:5])
+
+
+```
+
+```{r}
+rules<-apriori(data=chipotle, parameter=list(supp=0.001,conf = 0.8,minlen=6), 
+               appearance = list(default="lhs",rhs="Bottled Water"),
+               control = list(verbose=F))
+rules<-sort(rules, decreasing=TRUE,by="lift")
+rules
+inspect(rules[1:1])
+```
+
+```{r}
+rules<-apriori(data=chipotle, parameter=list(supp=0.001,conf = 0.01,minlen=2), 
+               appearance = list(default="rhs",lhs="Chicken Bowl"),
+               control = list(verbose=F))
+rules<-sort(rules, decreasing=TRUE,by="confidence")
+rules
+inspect(rules[1:10])
+```
+
+
+```{r}
+subset.matrix <- is.subset(rules, rules)
+subset.matrix[lower.tri(subset.matrix, diag=T)] <- NA
+redundant <- colSums(subset.matrix, na.rm=T) >= 1
+rules.pruned <- rules[!redundant]
+rules<-rules.pruned
+```
+
+```{r}
+plot(rules[1:10], method = "graph", engine="interactive", control = list(verbose = TRUE)) 
+```
+
+
+```{r}
+plot(rules[1:10], method = "graph",  engine = "htmlwidget")
+```
+
